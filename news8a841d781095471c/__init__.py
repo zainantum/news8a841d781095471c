@@ -18,7 +18,7 @@ from exorde_data import (
     ExternalId,
 )
 
-DEFAULT_OLDNESS_SECONDS = 3600
+DEFAULT_OLDNESS_SECONDS = 1600
 DEFAULT_MAXIMUM_ITEMS = 25
 DEFAULT_MIN_POST_LENGTH = 10
 
@@ -59,6 +59,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     data = await fetch_data(feed_url)
 
     max_oldness_seconds, maximum_items_to_collect, min_post_length = read_parameters(parameters)
+    logging.info(f"[News stream collector] Fetching data from {feed_url} with parameters: {parameters}")
     yielded_items = 0
 
     sorted_data = sorted(data, key=lambda x: x["pubDate"], reverse=True)
