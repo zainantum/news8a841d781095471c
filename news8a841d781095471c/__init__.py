@@ -67,7 +67,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.40))
 
     for entry in sorted_data:
-        if random.random() < 0.60:
+        if random.random() < 0.3:
             continue
         logging.info(f"[News stream collector] Processing entry: {entry['title']} - {entry['pubDate']} - {entry['source_url']}")
         if yielded_items >= maximum_items_to_collect:
