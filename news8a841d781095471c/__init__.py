@@ -97,7 +97,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             
             new_item = Item(
                 content=Content(str(content_article_str)),
-                author=Author(str(author)),
+                author=Author(str(author_sha1_hex)),
                 created_at=CreatedAt(pub_date),
                 title=Title(entry["title"]),
                 domain=Domain(str(domain_str)),
