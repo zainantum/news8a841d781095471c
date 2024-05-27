@@ -63,9 +63,10 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     yielded_items = 0
 
     sorted_data = sorted(data, key=lambda x: x["pubDate"], reverse=True)
+    # Randomly select 40% of the data
+    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.40))
 
     for entry in sorted_data:
-        # skip entry with probability of 0.35, by random
         if random.random() < 0.60:
             continue
         logging.info(f"[News stream collector] Processing entry: {entry['title']} - {entry['pubDate']} - {entry['source_url']}")
