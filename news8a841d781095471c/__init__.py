@@ -18,7 +18,7 @@ from exorde_data import (
     ExternalId,
 )
 
-DEFAULT_OLDNESS_SECONDS = 1600
+DEFAULT_OLDNESS_SECONDS = 3600
 DEFAULT_MAXIMUM_ITEMS = 25
 DEFAULT_MIN_POST_LENGTH = 10
 
@@ -96,13 +96,13 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             domain_str = tld.extract(domain_str).registered_domain
             
             new_item = Item(
-                content=Content(entry["description"]),
+                content=Content(str(content_article_str)),
                 author=Author(str(author)),
                 created_at=CreatedAt(pub_date),
                 title=Title(entry["title"]),
                 domain=Domain(str(domain_str)),
                 url=Url(entry["link"]),
-                external_id=ExternalId(entry["article_id"]),
+                external_id=ExternalId(entry["article_id"])
             )
 
             yielded_items += 1
