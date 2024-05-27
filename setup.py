@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="news8a841d781095471c",
-    version="0.1.5",
+    version="0.1.6",
     packages=find_packages(),
     install_requires=[
         'aiohttp>=3.8.1',  # For asynchronous HTTP requests
