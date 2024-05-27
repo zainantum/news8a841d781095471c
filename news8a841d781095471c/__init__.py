@@ -106,4 +106,6 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
 
             yielded_items += 1
             yield new_item
+        else:
+            logging.info(f"[News stream collector] Entry too old. Skipping.")
     logging.info(f"[News stream collector] Done.")
