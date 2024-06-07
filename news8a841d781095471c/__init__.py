@@ -6,6 +6,8 @@ from dateutil import parser
 from typing import AsyncGenerator
 import tldextract as tld
 import random
+import base64
+import json
 
 from exorde_data import (
     Item,
@@ -18,16 +20,21 @@ from exorde_data import (
     ExternalId,
 )
 
-DEFAULT_OLDNESS_SECONDS = 3600
-DEFAULT_MAXIMUM_ITEMS = 25
+DEFAULT_OLDNESS_SECONDS = 3600*3  # 3 hours
+DEFAULT_MAXIMUM_ITEMS = 10
 DEFAULT_MIN_POST_LENGTH = 10
 
-async def fetch_data(url):
+async def fetch_data(url, headers=None):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
+            async with session.get(url, headers=headers) as response:
                 response_text = await response.text()
-                return await response.json(content_type=None)  # Manually handle content type
+                if response.status == 200:
+                    json_data = await response.json(content_type=None)  # Manually handle content type
+                    return json_data
+                else:
+                    logging.error(f"Error fetching data: {response.status} {response_text}")
+                    return []
     except Exception as e:
         logging.error(f"Error fetching data: {e}")
         return []
@@ -63,11 +70,19 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     yielded_items = 0
 
     sorted_data = sorted(data, key=lambda x: x["pubDate"], reverse=True)
-    # Randomly select 40% of the data
-    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.40))
+    # Randomly select 30% of the data because this script is run by 100 users
+    # and we want to avoid duplicates
+
+    # first filter all items with content length less than min_post_length and pubdate within max_oldness_seconds
+    sorted_data = [entry for entry in sorted_data if is_within_timeframe_seconds(convert_to_standard_timezone(entry["pubDate"]), max_oldness_seconds)]
+    logging.info(f"[News stream collector] Filtered data : {len(sorted_data)}")
+
+    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.3))
+
+    successive_old_entries = 0
 
     for entry in sorted_data:
-        if random.random() < 0.3:
+        if random.random() < 0.25:
             continue
         logging.info(f"[News stream collector] Processing entry: {entry['title']} - {entry['pubDate']} - {entry['source_url']}")
         if yielded_items >= maximum_items_to_collect:
@@ -109,6 +124,15 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             yielded_items += 1
             yield new_item
         else:
-            logging.info(f"[News stream collector] Entry too old. Skipping.")
-            break
+            # let's print how old the entry is, vs UTC time -2 hours
+            dt = datett.strptime(pub_date, "%Y-%m-%dT%H:%M:%S.00Z")
+            dt = dt.replace(tzinfo=timezone.utc)
+            current_dt = datett.now(timezone.utc)
+            time_diff = current_dt - dt
+            logging.info(f"[News stream collector] Entry is {abs(time_diff)} old : skipping.")
+            
+            successive_old_entries += 1
+            if successive_old_entries >= 5:
+                logging.info(f"[News stream collector] Too many old entries. Stopping.")
+                break
     logging.info(f"[News stream collector] Done.")
