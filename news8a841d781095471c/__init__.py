@@ -69,12 +69,13 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     max_oldness_seconds, maximum_items_to_collect, min_post_length = read_parameters(parameters)
     logging.info(f"[News stream collector] Fetching data from {feed_url} with parameters: {parameters}")
     yielded_items = 0
-
+    logging.info(f"[News stream collector] Return from {feed_url} : {len(data)}")
     sorted_data = sorted(data, key=lambda x: x["pubDate"], reverse=True)
+    logging.info(f"[News stream collector] Data sorted length : {len(sorted_data)}")
     sorted_data = [entry for entry in sorted_data if is_within_timeframe_seconds(convert_to_standard_timezone(entry["pubDate"]), max_oldness_seconds)]
-    logging.info(f"[News stream collector] Filtered data : {len(sorted_data)}")
+    logging.info(f"[News stream collector] Filtered data time seconds : {len(sorted_data)}")
 
-    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.3))
+    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.5))
 
     successive_old_entries = 0
 
