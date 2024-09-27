@@ -53,7 +53,7 @@ def is_within_timeframe_seconds(dt_str, timeframe_sec):
 
 def read_parameters(parameters):
     if parameters and isinstance(parameters, dict):
-        max_oldness_seconds = parameters.get("max_oldness_seconds", DEFAULT_OLDNESS_SECONDS)
+        max_oldness_seconds = 1800
         maximum_items_to_collect = parameters.get("maximum_items_to_collect", DEFAULT_MAXIMUM_ITEMS)
         min_post_length = parameters.get("min_post_length", DEFAULT_MIN_POST_LENGTH)
     else:
