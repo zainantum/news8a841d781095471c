@@ -70,10 +70,6 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     yielded_items = 0
 
     sorted_data = sorted(data, key=lambda x: x["pubDate"], reverse=True)
-    # Randomly select 30% of the data because this script is run by 100 users
-    # and we want to avoid duplicates
-
-    # first filter all items with content length less than min_post_length and pubdate within max_oldness_seconds
     sorted_data = [entry for entry in sorted_data if is_within_timeframe_seconds(convert_to_standard_timezone(entry["pubDate"]), max_oldness_seconds)]
     logging.info(f"[News stream collector] Filtered data : {len(sorted_data)}")
 
@@ -81,12 +77,16 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
 
     successive_old_entries = 0
 
-    for entry in sorted_data:
-        if random.random() < 0.25:
-            continue
-        logging.info(f"[News stream collector] Processing entry: {entry['title']} - {entry['pubDate']} - {entry['source_url']}")
+    # Define async processing for each entry
+    async def process_entry(entry):
+        nonlocal yielded_items, successive_old_entries
         if yielded_items >= maximum_items_to_collect:
-            break
+            return None
+
+        if random.random() < 0.25:
+            return None
+
+        logging.info(f"[News stream collector] Processing entry: {entry['title']} - {entry['pubDate']} - {entry['source_url']}")
 
         pub_date = convert_to_standard_timezone(entry["pubDate"])
 
@@ -96,21 +96,9 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             sha1.update(author.encode())
             author_sha1_hex = sha1.hexdigest()
 
-            content_article_str = ""
-            # if no content (null), then if description is not null, use it as content
-            # else if description is null as well, then use title as content
-            if entry.get("content"):
-                content_article_str = entry["content"]
-            elif entry.get("description"):
-                content_article_str = entry["description"]
-            else:
-                content_article_str = entry["title"]
+            content_article_str = entry.get("content") or entry.get("description") or entry["title"]
+            domain_str = tld.extract(entry.get("source_url", "unknown")).registered_domain
 
-            domain_str = entry["source_url"] if entry.get("source_url") else "unknown"
-            # remove the domain using tldextract to have only the domain name
-            # e.g. http://www.example.com -> example.com
-            domain_str = tld.extract(domain_str).registered_domain
-            
             new_item = Item(
                 content=Content(str(content_article_str)),
                 author=Author(str(author_sha1_hex)),
@@ -122,17 +110,27 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             )
 
             yielded_items += 1
-            yield new_item
+            return new_item
         else:
-            # let's print how old the entry is, vs UTC time -2 hours
-            dt = datett.strptime(pub_date, "%Y-%m-%dT%H:%M:%S.00Z")
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = datett.strptime(pub_date, "%Y-%m-%dT%H:%M:%S.00Z").replace(tzinfo=timezone.utc)
             current_dt = datett.now(timezone.utc)
             time_diff = current_dt - dt
-            logging.info(f"[News stream collector] Entry is {abs(time_diff)} old : skipping.")
-            
+            logging.info(f"[News stream collector] Entry is {abs(time_diff)} old: skipping.")
+
             successive_old_entries += 1
             if successive_old_entries >= 5:
                 logging.info(f"[News stream collector] Too many old entries. Stopping.")
-                break
+                return None
+
+        return None
+
+    # Create tasks for entries and run them concurrently
+    tasks = [process_entry(entry) for entry in sorted_data]
+    results = await asyncio.gather(*tasks)
+
+    # Yield valid results only
+    for item in results:
+        if item is not None:
+            yield item
+
     logging.info(f"[News stream collector] Done.")
