@@ -85,8 +85,8 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
         if yielded_items >= maximum_items_to_collect:
             return None
 
-        if random.random() < 0.25:
-            return None
+        # if random.random() < 0.25:
+        #     return None
 
         logging.info(f"[News stream collector] Processing entry: {entry['title']} - {entry['pubDate']} - {entry['source_url']}")
 
