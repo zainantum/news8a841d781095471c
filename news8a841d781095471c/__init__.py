@@ -53,7 +53,7 @@ def is_within_timeframe_seconds(dt_str, timeframe_sec):
 
 def read_parameters(parameters):
     if parameters and isinstance(parameters, dict):
-        max_oldness_seconds = 1800
+        max_oldness_seconds = 3600
         maximum_items_to_collect = parameters.get("maximum_items_to_collect", DEFAULT_MAXIMUM_ITEMS)
         min_post_length = parameters.get("min_post_length", DEFAULT_MIN_POST_LENGTH)
     else:
@@ -75,7 +75,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     sorted_data = [entry for entry in sorted_data if is_within_timeframe_seconds(convert_to_standard_timezone(entry["pubDate"]), max_oldness_seconds)]
     logging.info(f"[News stream collector] Filtered data time seconds : {len(sorted_data)}")
 
-    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.5))
+    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.75))
 
     successive_old_entries = 0
 
