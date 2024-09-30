@@ -127,8 +127,15 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
         return None
 
     # Create tasks for entries and run them concurrently
-    tasks = [process_entry(entry) for entry in sorted_data]
-    results = await asyncio.gather(*tasks)
+    # tasks = [process_entry(entry) for entry in sorted_data]
+    # results = await asyncio.gather(*tasks)
+    chunk_size = 5
+    results = []
+    for i in range(0, len(sorted_data), chunk_size):
+        chunk = sorted_data[i:i + chunk_size]
+        tasks = [process_entry(entry) for entry in chunk]
+        chunk_results = await asyncio.gather(*tasks)
+        results.extend(chunk_results)
 
     # Yield valid results only
     for item in results:
