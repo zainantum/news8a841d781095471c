@@ -75,7 +75,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     sorted_data = [entry for entry in sorted_data if is_within_timeframe_seconds(convert_to_standard_timezone(entry["pubDate"]), max_oldness_seconds)]
     logging.info(f"[News stream collector] Filtered data time seconds : {len(sorted_data)}")
 
-    sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.75))
+    # sorted_data = random.sample(sorted_data, int(len(sorted_data) * 0.75))
 
     successive_old_entries = 0
 
